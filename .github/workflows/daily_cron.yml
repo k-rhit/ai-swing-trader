@@ -1,30 +1,39 @@
-name: Daily Swing Trader
+name: Daily Swing Trader Pipeline
 
 on:
   schedule:
-    - cron: "30 13 * * MON-FRI"   # Runs 7 PM IST
+    - cron: "30 13 * * 1-5"   # 13:30 UTC = 19:00 IST, weekdays only
   workflow_dispatch:
 
 jobs:
-  run-system:
+  run-pipeline:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
 
     - name: Install dependencies
       run: pip install -r requirements.txt
 
-    - name: Run Pipeline
+    - name: Run the pipeline
+      env:
+        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        CHAT_ID: ${{ secrets.CHAT_ID }}
       run: |
         python src/data_download.py
         python src/features.py
         python src/train_model.py
         python src/generate_signals.py
-        python src/notify.py
+        BOT_TOKEN=$BOT_TOKEN CHAT_ID=$CHAT_ID python src/notify.py
 
-    - name: Upload signals
-      uses: actions/upload-artifact@v2
+    - name: Upload daily signals as artifact
+      uses: actions/upload-artifact@v3
       with:
-        name: signals
+        name: today_signals
         path: data/signals/today_signals.csv
