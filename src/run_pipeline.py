@@ -11,6 +11,6 @@ print("\n===== STEP 3: Generating Signals =====")
 os.system("python src/generated_signals.py")
 
 print("\n===== STEP 4: Running Backtest =====")
-os.system("python src/backtest_engine.py")
+os.system("python backtest/backtest_engine.py")
 
 print("\n===== PIPELINE FINISHED =====")
