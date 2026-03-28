@@ -5,7 +5,7 @@ from utils import load_tickers
 import os
 
 def download_data():
-    tickers = load_tickers()  # now reading from tickers.json
+    tickers = load_tickers()
     end = datetime.today()
     start = end - timedelta(days=900)
 
