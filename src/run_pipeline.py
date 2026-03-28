@@ -1,6 +1,7 @@
 import os
 
 print("\n===== STEP 1: Processing Raw Data =====")
+os.system("data_download.py")
 os.system("python features.py")
 
 print("\n===== STEP 2: Training Model =====")
