@@ -2,6 +2,7 @@ import pandas as pd
 import ta
 import glob
 import os
+from utils import load_tickers
 
 def add_features(df):
     df["rsi"] = ta.momentum.rsi(df["Close"], window=14)
@@ -18,20 +19,23 @@ def add_features(df):
 
 def process_all():
     os.makedirs("data/processed", exist_ok=True)
+    tickers = load_tickers()
 
-    for file in glob.glob("data/raw/*.csv"):
+    for symbol in tickers:
+        file = f"data/raw/{symbol}.csv"
+        if not os.path.exists(file):
+            print("Missing raw file for:", symbol)
+            continue
+
         df = pd.read_csv(file)
 
-        # CLEAN NUMERIC COLUMNS
         numeric_cols = ["Open", "High", "Low", "Close", "Volume"]
         df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce")
-
-        # Remove rows that still have invalid data
         df.dropna(subset=numeric_cols, inplace=True)
 
         df = add_features(df)
 
-        out_path = "data/processed/" + os.path.basename(file)
+        out_path = f"data/processed/{symbol}.csv"
         df.to_csv(out_path, index=False)
         print("Processed:", out_path)
 

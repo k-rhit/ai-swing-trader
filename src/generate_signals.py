@@ -1,8 +1,6 @@
 import pandas as pd
 import xgboost as xgb
-import glob
-import numpy as np
-import json
+from utils import load_tickers
 
 model = xgb.XGBClassifier()
 model.load_model("data/models/model.json")
@@ -10,7 +8,7 @@ model.load_model("data/models/model.json")
 SIGNALS = []
 
 def generate_signal_for_stock(df, symbol):
-    row = df.iloc[-1]  
+    row = df.iloc[-1]
 
     X = row[["rsi","macd","atr","ema20","ema50","vol_z"]].values.reshape(1, -1)
     prob = model.predict_proba(X)[0][1]
@@ -34,11 +32,18 @@ def generate_signal_for_stock(df, symbol):
             "target": round(target,2)
         })
 
+
 def generate_all_signals():
-    for file in glob.glob("data/processed/*.csv"):
+    tickers = load_tickers()
+
+    for symbol in tickers:
+        file = f"data/processed/{symbol}.csv"
         df = pd.read_csv(file)
-        generate_signal_for_stock(df, file.split("/")[-1].replace(".csv",""))
+        generate_signal_for_stock(df, symbol)
+
     pd.DataFrame(SIGNALS).to_csv("data/signals/today_signals.csv", index=False)
+    print("Signals generated.")
+
 
 if __name__ == "__main__":
     generate_all_signals()
