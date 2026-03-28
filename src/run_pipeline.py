@@ -1,6 +1,7 @@
 import os
 
 print("\n===== STEP 1: Processing Raw Data =====")
+os.system("python src/utils.py")
 os.system("python src/data_download.py")
 os.system("python src/features.py")
 
