@@ -13,6 +13,10 @@ def add_features(df):
 
     df["vol_z"] = (df["Volume"] - df["Volume"].rolling(20).mean()) / df["Volume"].rolling(20).std()
 
+    df["sma20"] = df["Close"].rolling(20).mean()
+    df["sma50"] = df["Close"].rolling(50).mean()
+    df["sma200"] = df["Close"].rolling(200).mean()
+
     df.dropna(inplace=True)
     return df
 

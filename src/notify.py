@@ -1,68 +1,88 @@
 import pandas as pd
 import requests
 import os
+import ast
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
+
 
 def send_message(text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     requests.post(url, data={"chat_id": CHAT_ID, "text": text})
 
 
+# -----------------------------------------------------
+# Safe CSV loader
+# -----------------------------------------------------
 def safe_read_csv(path):
-    # 1. File does not exist
     if not os.path.exists(path):
         return None
 
-    # 2. File is empty in bytes
     if os.path.getsize(path) == 0:
         return pd.DataFrame()
 
-    # 3. Read raw text first
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
         content = f.read().strip()
 
-    # 4. Only whitespace/newlines → treat as empty
     if content == "" or content.replace("\n", "") == "":
         return pd.DataFrame()
 
-    # 5. CSV must contain at least one comma or header-like structure
     if "," not in content:
         return pd.DataFrame()
 
-    # 6. Now safely load CSV
     try:
         return pd.read_csv(path)
     except Exception:
         return pd.DataFrame()
 
 
+# -----------------------------------------------------
+# Notify Logic
+# -----------------------------------------------------
 def notify():
     path = "data/signals/today_signals.csv"
-
     df = safe_read_csv(path)
 
-    # df is None → file missing
     if df is None:
-        send_message("Signal file missing.")
+        send_message("⚠ Signal file missing.")
         return
 
-    # df exists but empty or corrupted
     if df.empty:
-        send_message("No swing signals today.")
+        send_message("ℹ No swing signals today.")
         return
 
-    # Otherwise process signals
     for _, r in df.iterrows():
-        msg = f"""
-Swing Signal:
-{r['symbol']}
-Score: {r['final_score']}
-Entry Range: {r['entry_range']}
-SL: {r['stop_loss']}
-Target: {r['target']}
-"""
+
+        # Convert string "[120, 130]" to list
+        try:
+            entry_range = ast.literal_eval(r["entry_range"])
+        except:
+            entry_range = r["entry_range"]
+
+        # Determine trend-type (EMA based)
+        trend_basis = "EMA trend filter (EMA20 > EMA50)"
+
+        # Momentum components
+        momentum_basis = "RSI + MACD + Volume Z-score (momentum confirmation)"
+
+        # Target basis (ATR-based target)
+        target_basis = "ATR-based targeting (TP1 = 2.2 ATR, TP2 = 3.8 ATR)"
+
+        msg = (
+f"📈 *Swing Signal Alert*\n"
+f"Symbol: {r['symbol']}\n"
+f"Final Score: {r['final_score']}\n\n"
+f"Entry Range: {entry_range}\n"
+f"Stop-Loss: {r['stop_loss']}\n"
+f"Target 1: {r.get('target1', 'N/A')}\n"
+f"Target 2: {r.get('target2', 'N/A')}\n\n"
+f"📊 Basis:\n"
+f"- Trend: {trend_basis}\n"
+f"- Momentum: {momentum_basis}\n"
+f"- Targeting: {target_basis}\n"
+        )
+
         send_message(msg)
 
 
